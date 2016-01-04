@@ -135,6 +135,13 @@ define Build/netgear-chk
 	mv $@.new $@
 endef
 
+define Build/belkin-trx
+	echo -ne $(BELKIN_HDR_MAGIC) > $@.head
+	dd if=$@ of=/dev/stdout bs=4 skip=1 > $@.tail
+	cat $@.head $@.tail > $@
+	rm -f $@.head $@.tail
+endef
+
 #################################################
 # Devices
 #################################################
@@ -142,6 +149,7 @@ endef
 DEVICE_VARS += PRODUCTID
 DEVICE_VARS += DEVICE_ID VERSION
 DEVICE_VARS += BOARD_ID REGION
+DEVICE_VARS += BELKIN_HDR_MAGIC
 
 define Device/Default
 	KERNEL := kernel-bin
@@ -192,6 +200,20 @@ define NetgearDevice
   endef
   TARGET_DEVICES += netgear-$(1)
 endef
+
+define Device/belkin
+	IMAGES := trx
+	IMAGE/trx := trx-with-loader | belkin-trx
+endef
+
+define BelkinDevice
+  define Device/belkin-$(1)
+	$$(Device/belkin)
+	BELKIN_HDR_MAGIC := $(2)
+  endef
+  TARGET_DEVICES += belkin-$(1)
+endef
+
 
 #################################################
 # Subtarget generic
@@ -339,6 +361,13 @@ ifeq ($(SUBTARGET),mips74k)
   $(eval $(call NetgearDevice,wnr3500l-v1-other-regions,U12H136T99_NETGEAR,1))
   $(eval $(call NetgearDevice,wnr3500l-v2,U12H172T00_NETGEAR,1))
   $(eval $(call NetgearDevice,wnr3500-v2,U12H127T00_NETGEAR,2))
+  $(eval $(call BelkinDevice,f7dxxxx,'\x78\x56\x34\x12'))
+  $(eval $(call BelkinDevice,f7d3301,'\x22\x03\x10\x20'))
+  $(eval $(call BelkinDevice,f7d3302,'\x28\x09\x09\x20'))
+  $(eval $(call BelkinDevice,f7d4302,'\x06\x10\x10\x20'))
+  $(eval $(call BelkinDevice,f7d4401,'\x17\x85\x01\x00'))
+
+
 endif
 
 #################################################
